@@ -10,14 +10,13 @@ citations:
     1) TCP example by Brian Rogers, updated by Rabih Younes. Duke University.
 */
 
-int setUpSocket(char * host_name, struct addrinfo ** hosts, char * port) {
+int setUpSocketToConnect(char * host_name, struct addrinfo ** hosts, char * port) {
   struct addrinfo hints;
 
   memset(&hints, 0, sizeof(hints));
 
-  hints.ai_flags = AF_UNSPEC;       // To return address family from both IPV4 and IPV6.
+  hints.ai_flags = AF_INET;         // To return address family from both IPV4 and IPV6.
   hints.ai_socktype = SOCK_STREAM;  // Connection based protocol (i.e. TCP).
-  hints.ai_flags = AI_PASSIVE;      // Return Socket will be suitable for bind and accept.
 
   int status = getaddrinfo(host_name, port, &hints, hosts);
   if (status != 0) {
@@ -31,22 +30,33 @@ int setUpSocket(char * host_name, struct addrinfo ** hosts, char * port) {
     std::cerr << "Error cannot create socket" << std::endl;
     exit(EXIT_FAILURE);
   }
+  return socket_fd;
+}
 
-  /**
+int setUpSocketToListen() {
+  int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+
   int yes = 1;
   setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
-  status = bind(socket_fd, (*hosts)->ai_addr, (*hosts)->ai_addrlen);
+
+  struct sockaddr_in my_addr;
+  memset(&my_addr, 0, sizeof(my_addr));
+  my_addr.sin_family = AF_INET;
+  my_addr.sin_port = 0;
+  socklen_t len = sizeof(my_addr);
+
+  int status = bind(socket_fd, (struct sockaddr *)&my_addr, len);
   if (status == -1) {
     std::cerr << "Error cannot bind socket" << std::endl;
-    return EXIT_FAILURE;
+    exit(EXIT_FAILURE);
   }
 
   status = listen(socket_fd, 100);
   if (status == -1) {
     std::cerr << "Error cannot listen on socket" << std::endl;
-    return EXIT_FAILURE;
+    exit(EXIT_FAILURE);
   }
-  **/
+
   return socket_fd;
 }
 
@@ -61,23 +71,37 @@ int main(int argc, char * argv[]) {
   char * port = argv[2];
   struct addrinfo * hosts;
 
-  int ringmaster_socket = setUpSocket(hostname, &hosts, port);
+  int ringmaster_socket = setUpSocketToConnect(hostname, &hosts, port);
+  int player_socket = setUpSocketToListen();
 
   std::cout << "Connecting" << std::endl;
 
-  int status = connect(ringmaster_socket, hosts->ai_addr, hosts->ai_addrlen);
-  if (status == -1) {
+  if (connect(ringmaster_socket, hosts->ai_addr, hosts->ai_addrlen) == -1) {
     std::cerr << "Error Cannot connect to socket" << std::endl;
     exit(EXIT_FAILURE);
   }
 
-  const char * msg = "Server message";
+  //Send player's hostname to ringmaster
+  char player_hostname[512];
+  if (gethostname(player_hostname, 512) != 0) {
+    std::cerr << "Error could not get hostname" << std::endl;
+  }
+  send(ringmaster_socket, player_hostname, 512, 0);
 
-  std::cout << msg << std::endl;
-  send(ringmaster_socket, msg, strlen(msg), 0);
+  // Send player's portto the the ring master.
+  struct sockaddr_in playeraddr;
+  memset(&playeraddr, 0, sizeof(playeraddr));
+  socklen_t len = sizeof(playeraddr);
+  getsockname(player_socket, (struct sockaddr *)&playeraddr, &len);
+  const char * player_port = std::to_string(playeraddr.sin_port).c_str();
+  send(ringmaster_socket, player_port, 512, 0);
+
+  char buffer[512];
+  recv(ringmaster_socket, buffer, 512, 0);
+  std::cout << "Received  " << buffer << std::endl;
 
   freeaddrinfo(hosts);
   close(ringmaster_socket);
-
+  close(player_socket);
   return EXIT_SUCCESS;
 }
