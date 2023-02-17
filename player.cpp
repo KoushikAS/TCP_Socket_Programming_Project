@@ -10,6 +10,13 @@ citations:
     1) TCP example by Brian Rogers, updated by Rabih Younes. Duke University.
 */
 
+class playerClass {
+ public:
+  int socketFd;
+  char hostName[512];
+  char port[512];
+};
+
 int setUpSocketToConnect(char * host_name, struct addrinfo ** hosts, char * port) {
   struct addrinfo hints;
 
@@ -74,8 +81,6 @@ int main(int argc, char * argv[]) {
   int ringmaster_socket = setUpSocketToConnect(hostname, &hosts, port);
   int player_socket = setUpSocketToListen();
 
-  std::cout << "Connecting" << std::endl;
-
   if (connect(ringmaster_socket, hosts->ai_addr, hosts->ai_addrlen) == -1) {
     std::cerr << "Error Cannot connect to socket" << std::endl;
     exit(EXIT_FAILURE);
@@ -96,10 +101,32 @@ int main(int argc, char * argv[]) {
   const char * player_port = std::to_string(playeraddr.sin_port).c_str();
   send(ringmaster_socket, player_port, 512, 0);
 
-  char buffer[512];
-  recv(ringmaster_socket, buffer, 512, 0);
-  std::cout << "Received  " << buffer << std::endl;
+  //Receving Left Player
+  playerClass leftPlayer;
 
+  recv(ringmaster_socket, leftPlayer.hostName, 512, 0);
+  recv(ringmaster_socket, leftPlayer.port, 512, 0);
+  leftPlayer.socketFd =
+      setUpSocketToConnect(leftPlayer.hostName, &hosts, leftPlayer.port);
+
+  //Receving Right Player
+  playerClass rightPlayer;
+
+  recv(ringmaster_socket, rightPlayer.hostName, 512, 0);
+  recv(ringmaster_socket, rightPlayer.port, 512, 0);
+  rightPlayer.socketFd =
+      setUpSocketToConnect(rightPlayer.hostName, &hosts, rightPlayer.port);
+
+  //Receving Player Name Info
+  char playerName[512];
+  recv(ringmaster_socket, playerName, 512, 0);
+
+  //Receving Total No of Players Info
+  char no_players[512];
+  recv(ringmaster_socket, no_players, 512, 0);
+
+  std::cout << "Connected as player " << playerName << " out of " << no_players
+            << " total players" << std::endl;
   freeaddrinfo(hosts);
   close(ringmaster_socket);
   close(player_socket);

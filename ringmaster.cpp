@@ -71,13 +71,15 @@ int main(int argc, char * argv[]) {
   int no_hops = atoi(argv[3]);
   struct addrinfo * hosts;
 
+  std::cout << "Potato Ringmaster" << std::endl;
+  std::cout << "Players = " << no_players << std::endl;
+  std::cout << "Hops = " << no_hops << std::endl;
   std::vector<playerClass> players;
 
   int socket_fd = setUpSocket(&hosts, port);
 
+  //Setting up all palyers info
   for (int i = 0; i < no_players; i++) {
-    std::cout << "Waiting for connection" << std::endl;
-
     playerClass player;
     player.playerNo = i;
 
@@ -95,13 +97,31 @@ int main(int argc, char * argv[]) {
     recv(player.socketFd, player.port, 512, 0);
 
     players.push_back(player);
+    std::cout << "Player " << i << " is ready to play" << std::endl;
   }
 
+  //Sending player info
   for (int i = 0; i < no_players; i++) {
-    std::cout << players[i].hostName << std::endl;
-    std::cout << players[i].port << std::endl;
-    const char * msg = "Player close";
-    send(players[i].socketFd, msg, strlen(msg), 0);
+    //Send Left player info
+    int left = (i - 1) % no_players;
+
+    send(players[i].socketFd, players[left].hostName, 512, 0);
+    send(players[i].socketFd, players[left].port, 512, 0);
+
+    //Send Right player info
+    int right = (i + 1) % no_players;
+
+    send(players[i].socketFd, players[right].hostName, 512, 0);
+    send(players[i].socketFd, players[right].port, 512, 0);
+
+    //Send Current Player Info
+    const char * curr_player_info = std::to_string(players[i].playerNo).c_str();
+    send(players[i].socketFd, curr_player_info, 512, 0);
+
+    //Send total Player
+    const char * total_player_info = std::to_string(no_players).c_str();
+    send(players[i].socketFd, total_player_info, 512, 0);
+
     close(players[i].socketFd);
   }
 
