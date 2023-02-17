@@ -10,17 +10,7 @@ citations:
     1) TCP example by Brian Rogers, updated by Rabih Younes. Duke University.
 */
 
-class playerClass {
- public:
-  int playerNo;
-  int socketFd;
-  struct sockaddr_storage clientSocketInfo;
-};
-
-/**
-    To Set up primary Socket to isten from
-*/
-int setUpSocket(struct addrinfo ** hosts, char * port) {
+int setUpSocket(char * host_name, struct addrinfo ** hosts, char * port) {
   struct addrinfo hints;
 
   memset(&hints, 0, sizeof(hints));
@@ -29,7 +19,7 @@ int setUpSocket(struct addrinfo ** hosts, char * port) {
   hints.ai_socktype = SOCK_STREAM;  // Connection based protocol (i.e. TCP).
   hints.ai_flags = AI_PASSIVE;      // Return Socket will be suitable for bind and accept.
 
-  int status = getaddrinfo(NULL, port, &hints, hosts);
+  int status = getaddrinfo(host_name, port, &hints, hosts);
   if (status != 0) {
     std::cerr << "Error cannot get the addresses" << std::endl;
     exit(EXIT_FAILURE);
@@ -42,67 +32,52 @@ int setUpSocket(struct addrinfo ** hosts, char * port) {
     exit(EXIT_FAILURE);
   }
 
+  /**
   int yes = 1;
   setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
   status = bind(socket_fd, (*hosts)->ai_addr, (*hosts)->ai_addrlen);
   if (status == -1) {
     std::cerr << "Error cannot bind socket" << std::endl;
-    exit(EXIT_FAILURE);
+    return EXIT_FAILURE;
   }
 
   status = listen(socket_fd, 100);
   if (status == -1) {
     std::cerr << "Error cannot listen on socket" << std::endl;
-    exit(EXIT_FAILURE);
+    return EXIT_FAILURE;
   }
+  **/
   return socket_fd;
 }
 
 int main(int argc, char * argv[]) {
-  if (argc < 4) {
+  if (argc < 3) {
     std::cerr << "Required no of arguments is not provided for this function"
               << std::endl;
     exit(EXIT_FAILURE);
   }
 
-  char * port = argv[1];
-  int no_players = atoi(argv[2]);
-  int no_hops = atoi(argv[3]);
+  char * hostname = argv[1];
+  char * port = argv[2];
   struct addrinfo * hosts;
 
-  std::vector<playerClass> players;
+  int ringmaster_socket = setUpSocket(hostname, &hosts, port);
 
-  int socket_fd = setUpSocket(&hosts, port);
+  std::cout << "Connecting" << std::endl;
 
-  for (int i = 0; i < no_players; i++) {
-    std::cout << "Waiting for connection" << std::endl;
-    playerClass player;
-    player.playerNo = i;
-    socklen_t socket_addr_len = sizeof(player.clientSocketInfo);
-    player.socketFd =
-        accept(socket_fd, (struct sockaddr *)&player.clientSocketInfo, &socket_addr_len);
-    if (player.socketFd == -1) {
-      std::cerr << "Error cannot accept connection on socket" << std::endl;
-      exit(EXIT_FAILURE);
-    }
-    players.push_back(player);
-
-    char buffer[512];
-    recv(players[i].socketFd, buffer, 512, 0);
-    std::cout << "Players " << players[i].playerNo << " Server received: " << buffer
-              << std::endl;
-
-    std::cout << players[i].clientSocketInfo.ss_family << std::endl;
+  int status = connect(ringmaster_socket, hosts->ai_addr, hosts->ai_addrlen);
+  if (status == -1) {
+    std::cerr << "Error Cannot connect to socket" << std::endl;
+    exit(EXIT_FAILURE);
   }
 
-  // for(int i =0; i <no_players; i++){
+  const char * msg = "Server message";
 
-  // send(players[i].socketFd, msg, strlen(msg), 0);
-  // close(players[i].socketFd);
-  // }
+  std::cout << msg << std::endl;
+  send(ringmaster_socket, msg, strlen(msg), 0);
 
   freeaddrinfo(hosts);
-  close(socket_fd);
+  close(ringmaster_socket);
 
   return EXIT_SUCCESS;
 }
