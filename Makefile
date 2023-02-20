@@ -5,7 +5,7 @@ clean:
 	rm -f $(TARGETS)
 
 ringmaster: ringmaster.cpp
-	g++ -g -o $@ $<
+	g++ -std=c++11 -g -o $@ $<
 
 player: player.cpp
-	g++ -g -o $@ $<
+	g++ -std=c++11 -g -o $@ $<

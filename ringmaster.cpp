@@ -97,13 +97,17 @@ int main(int argc, char * argv[]) {
     recv(player.socketFd, player.port, 512, 0);
 
     players.push_back(player);
+
+    std::cout << player.hostName << std::endl;
+    std::cout << player.port << std::endl;
+
     std::cout << "Player " << i << " is ready to play" << std::endl;
   }
 
   //Sending player info
   for (int i = 0; i < no_players; i++) {
     //Send Left player info
-    int left = (i - 1) % no_players;
+    int left = (no_players + (i - 1) % no_players) % no_players;
 
     send(players[i].socketFd, players[left].hostName, 512, 0);
     send(players[i].socketFd, players[left].port, 512, 0);

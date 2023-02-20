@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #include <iostream>
+#include <thread>
 #include <vector>
 
 /**
@@ -17,31 +18,43 @@ class playerClass {
   char port[512];
 };
 
-int setUpSocketToConnect(char * host_name, struct addrinfo ** hosts, char * port) {
+int setUpSocketToConnect(char * host_name, char * port) {
   struct addrinfo hints;
+  struct addrinfo * hosts;
 
   memset(&hints, 0, sizeof(hints));
 
   hints.ai_flags = AF_INET;         // To return address family from both IPV4 and IPV6.
   hints.ai_socktype = SOCK_STREAM;  // Connection based protocol (i.e. TCP).
 
-  int status = getaddrinfo(host_name, port, &hints, hosts);
+  int status = getaddrinfo(host_name, port, &hints, &hosts);
   if (status != 0) {
     std::cerr << "Error cannot get the addresses" << std::endl;
     exit(EXIT_FAILURE);
   }
 
-  int socket_fd =
-      socket((*hosts)->ai_family, (*hosts)->ai_socktype, (*hosts)->ai_protocol);
+  int socket_fd = socket(hosts->ai_family, hosts->ai_socktype, hosts->ai_protocol);
   if (socket_fd == -1) {
     std::cerr << "Error cannot create socket" << std::endl;
     exit(EXIT_FAILURE);
   }
+
+  if (connect(socket_fd, hosts->ai_addr, hosts->ai_addrlen) == -1) {
+    std::cerr << "Error Cannot connect to socket" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+
+  freeaddrinfo(hosts);
   return socket_fd;
 }
 
 int setUpSocketToListen() {
   int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+
+  if (socket_fd == -1) {
+    std::cerr << "Error  cannot create socket" << std::endl;
+    exit(EXIT_FAILURE);
+  }
 
   int yes = 1;
   setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
@@ -67,6 +80,19 @@ int setUpSocketToListen() {
   return socket_fd;
 }
 
+void threadToListen(int main_socketFd) {
+  std::cout << "Waiting " << std::endl;
+
+  int socketFd = accept(main_socketFd, NULL, NULL);
+  if (socketFd == -1) {
+    std::cerr << "Error cannot accept connection on socket" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+  std::cout << "Someone contacted" << std::endl;
+
+  return;
+}
+
 int main(int argc, char * argv[]) {
   if (argc < 3) {
     std::cerr << "Required no of arguments is not provided for this function"
@@ -76,15 +102,11 @@ int main(int argc, char * argv[]) {
 
   char * hostname = argv[1];
   char * port = argv[2];
-  struct addrinfo * hosts;
 
-  int ringmaster_socket = setUpSocketToConnect(hostname, &hosts, port);
+  int ringmaster_socket = setUpSocketToConnect(hostname, port);
   int player_socket = setUpSocketToListen();
 
-  if (connect(ringmaster_socket, hosts->ai_addr, hosts->ai_addrlen) == -1) {
-    std::cerr << "Error Cannot connect to socket" << std::endl;
-    exit(EXIT_FAILURE);
-  }
+  std::thread t1(threadToListen, player_socket);
 
   //Send player's hostname to ringmaster
   char player_hostname[512];
@@ -106,16 +128,15 @@ int main(int argc, char * argv[]) {
 
   recv(ringmaster_socket, leftPlayer.hostName, 512, 0);
   recv(ringmaster_socket, leftPlayer.port, 512, 0);
-  leftPlayer.socketFd =
-      setUpSocketToConnect(leftPlayer.hostName, &hosts, leftPlayer.port);
+
+  leftPlayer.socketFd = setUpSocketToConnect(leftPlayer.hostName, leftPlayer.port);
 
   //Receving Right Player
   playerClass rightPlayer;
 
   recv(ringmaster_socket, rightPlayer.hostName, 512, 0);
   recv(ringmaster_socket, rightPlayer.port, 512, 0);
-  rightPlayer.socketFd =
-      setUpSocketToConnect(rightPlayer.hostName, &hosts, rightPlayer.port);
+  //rightPlayer.socketFd = setUpSocketToConnect(rightPlayer.hostName, rightPlayer.port);
 
   //Receving Player Name Info
   char playerName[512];
@@ -127,7 +148,8 @@ int main(int argc, char * argv[]) {
 
   std::cout << "Connected as player " << playerName << " out of " << no_players
             << " total players" << std::endl;
-  freeaddrinfo(hosts);
+
+  // t1.join();
   close(ringmaster_socket);
   close(player_socket);
   return EXIT_SUCCESS;
