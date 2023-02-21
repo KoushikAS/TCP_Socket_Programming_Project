@@ -2,10 +2,10 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <cstring>
 #include <iostream>
 #include <thread>
 #include <vector>
-
 /**
 citations:
     1) TCP example by Brian Rogers, updated by Rabih Younes. Duke University.
@@ -49,15 +49,15 @@ int setUpSocketToConnect(char * host_name, char * port) {
 }
 
 int setUpSocketToListen() {
-  int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+  int socket_fd = socket(PF_INET, SOCK_STREAM, 0);
 
   if (socket_fd == -1) {
     std::cerr << "Error  cannot create socket" << std::endl;
     exit(EXIT_FAILURE);
   }
 
-  int yes = 1;
-  setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+  //int yes = 1;
+  //setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
 
   struct sockaddr_in my_addr;
   memset(&my_addr, 0, sizeof(my_addr));
@@ -89,7 +89,7 @@ void threadToListen(int main_socketFd) {
     exit(EXIT_FAILURE);
   }
   std::cout << "Someone contacted" << std::endl;
-
+  close(socketFd);
   return;
 }
 
@@ -112,6 +112,7 @@ int main(int argc, char * argv[]) {
   char player_hostname[512];
   if (gethostname(player_hostname, 512) != 0) {
     std::cerr << "Error could not get hostname" << std::endl;
+    exit(EXIT_FAILURE);
   }
   send(ringmaster_socket, player_hostname, 512, 0);
 
@@ -119,8 +120,12 @@ int main(int argc, char * argv[]) {
   struct sockaddr_in playeraddr;
   memset(&playeraddr, 0, sizeof(playeraddr));
   socklen_t len = sizeof(playeraddr);
-  getsockname(player_socket, (struct sockaddr *)&playeraddr, &len);
-  const char * player_port = std::to_string(playeraddr.sin_port).c_str();
+  if (getsockname(player_socket, (struct sockaddr *)&playeraddr, &len) == -1) {
+    std::cerr << "Error cannot get the portname" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+  const char * player_port = std::to_string(ntohs(playeraddr.sin_port)).c_str();
+
   send(ringmaster_socket, player_port, 512, 0);
 
   //Receving Left Player
@@ -149,7 +154,7 @@ int main(int argc, char * argv[]) {
   std::cout << "Connected as player " << playerName << " out of " << no_players
             << " total players" << std::endl;
 
-  // t1.join();
+  t1.join();
   close(ringmaster_socket);
   close(player_socket);
   return EXIT_SUCCESS;

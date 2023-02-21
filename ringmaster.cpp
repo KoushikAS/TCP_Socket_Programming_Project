@@ -2,9 +2,9 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <cstring>
 #include <iostream>
 #include <vector>
-
 /**
 citations:
     1) TCP example by Brian Rogers, updated by Rabih Younes. Duke University.
@@ -97,9 +97,6 @@ int main(int argc, char * argv[]) {
     recv(player.socketFd, player.port, 512, 0);
 
     players.push_back(player);
-
-    std::cout << player.hostName << std::endl;
-    std::cout << player.port << std::endl;
 
     std::cout << "Player " << i << " is ready to play" << std::endl;
   }
