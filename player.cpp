@@ -82,9 +82,10 @@ int setUpSocketToListen() {
   return socket_fd;
 }
 
-void threadToListen(int main_socketFd) {
-  std::cout << "Waiting " << std::endl;
-
+void threadToListen(int main_socketFd,
+                    playerClass leftPlayer,
+                    playerClass rightPlayer,
+                    playerClass ringMaster) {
   while (true) {
     int socketFd = accept(main_socketFd, NULL, NULL);
 
@@ -97,12 +98,34 @@ void threadToListen(int main_socketFd) {
     potato p[512];
     recv(socketFd, p, 512, 0);
 
-    if (p->hops_left == -1) {
+    if (p->hops_left < 0) {
       std::cout << "Finished" << std::endl;
       break;
     }
 
+    p->hops_left--;
     std::cout << p->hops_left << std::endl;
+
+    int socketToSend;
+
+    if (p->hops_left > 0) {
+      if (rand() % 2 == 0) {
+        //left
+        socketToSend = setUpSocketToConnect(leftPlayer.hostName, leftPlayer.port);
+      }
+      else {
+        //right
+        socketToSend = setUpSocketToConnect(leftPlayer.hostName, leftPlayer.port);
+      }
+    }
+    else {
+      std::cout << "Ring master socket" << std::endl;
+      socketToSend = setUpSocketToConnect(ringMaster.hostName, ringMaster.port);
+    }
+
+    send(socketToSend, p, 512, 0);
+
+    close(socketToSend);
     close(socketFd);
   }
 
@@ -162,21 +185,18 @@ int main(int argc, char * argv[]) {
   char no_players[512];
   recv(ringmaster_socket, no_players, 512, 0);
 
+  playerClass ringmaster;
+  std::strcpy(ringmaster.hostName, hostname);
+  std::strcpy(ringmaster.port, port);
+
   // create a seperate thread to listen for potatoes
-  std::thread t1(threadToListen, player_socket);
+  std::thread t1(threadToListen, player_socket, leftPlayer, rightPlayer, ringmaster);
 
   std::cout << "Connected as player " << playerName << " out of " << no_players
             << " total players" << std::endl;
 
   const char * msg = "OK";
   send(ringmaster_socket, msg, 512, 0);
-
-  /**
-  potato p;
-  p.hops_left = 10;
-
-  send(leftPlayer.socketFd, &p, 512, 0);
-  **/
 
   t1.join();
   close(ringmaster_socket);

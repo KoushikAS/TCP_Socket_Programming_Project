@@ -165,9 +165,24 @@ int main(int argc, char * argv[]) {
     close(players[i].socketFd);
   }
 
+  //Sending potato to random player
   int random_player_no = rand() % no_players;
-
+  std::cout << "Ready to start the game, sending potato to player " << random_player_no
+            << std::endl;
   sendPotato(players[random_player_no].hostName, players[random_player_no].port, no_hops);
+
+  //Receving for final potato socket
+  std::cout << "waiting" << std::endl;
+
+  int potato_sock = accept(socket_fd, NULL, NULL);
+  if (potato_sock == -1) {
+    std::cerr << "Error cannot accept connection on socket" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+
+  potato p[512];
+  std::cout << "Connected" << std::endl;
+  recv(potato_sock, p, 512, 0);
 
   //Shut down to all players
   for (int i = 0; i < no_players; i++) {
