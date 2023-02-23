@@ -5,6 +5,8 @@
 #include <cstring>
 #include <iostream>
 #include <vector>
+
+#include "potato.hpp"
 /**
 citations:
     1) TCP example by Brian Rogers, updated by Rabih Younes. Duke University.
@@ -21,7 +23,7 @@ class playerClass {
 /**
     To Set up primary Socket to isten from
 */
-int setUpSocket(struct addrinfo ** hosts, char * port) {
+int setUpSocketToListen(struct addrinfo ** hosts, char * port) {
   struct addrinfo hints;
 
   memset(&hints, 0, sizeof(hints));
@@ -59,6 +61,43 @@ int setUpSocket(struct addrinfo ** hosts, char * port) {
   return socket_fd;
 }
 
+void sendPotato(char * host_name, char * port, int no_hops) {
+  struct addrinfo hints;
+  struct addrinfo * hosts;
+
+  memset(&hints, 0, sizeof(hints));
+
+  hints.ai_flags = AF_INET;         // To return address family from both IPV4 and IPV6.
+  hints.ai_socktype = SOCK_STREAM;  // Connection based protocol (i.e. TCP).
+
+  int status = getaddrinfo(host_name, port, &hints, &hosts);
+  if (status != 0) {
+    std::cerr << "Error cannot get the addresses" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+
+  int socket_fd = socket(hosts->ai_family, hosts->ai_socktype, hosts->ai_protocol);
+  if (socket_fd == -1) {
+    std::cerr << "Error cannot create socket" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+
+  if (connect(socket_fd, hosts->ai_addr, hosts->ai_addrlen) == -1) {
+    std::cerr << "Error Cannot connect to socket" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+
+  const char * msg = "End";
+  send(socket_fd, msg, 512, 0);
+  /**
+  potato p;
+  p.hops_left = no_hops;
+  send(socket_fd, &p, 512, 0);
+  **/
+  freeaddrinfo(hosts);
+  close(socket_fd);
+}
+
 int main(int argc, char * argv[]) {
   if (argc < 4) {
     std::cerr << "Required no of arguments is not provided for this function"
@@ -76,7 +115,7 @@ int main(int argc, char * argv[]) {
   std::cout << "Hops = " << no_hops << std::endl;
   std::vector<playerClass> players;
 
-  int socket_fd = setUpSocket(&hosts, port);
+  int socket_fd = setUpSocketToListen(&hosts, port);
 
   //Setting up all palyers info
   for (int i = 0; i < no_players; i++) {
@@ -123,7 +162,16 @@ int main(int argc, char * argv[]) {
     const char * total_player_info = std::to_string(no_players).c_str();
     send(players[i].socketFd, total_player_info, 512, 0);
 
+    char msg[512];
+    recv(players[i].socketFd, msg, 512, 0);
+    std::cout << msg << std::endl;
+
     close(players[i].socketFd);
+  }
+
+  for (int i = 0; i < no_players; i++) {
+    sendPotato(players[i].hostName, players[i].port, 5);
+    std::cout << "Exit" << std::endl;
   }
 
   freeaddrinfo(hosts);

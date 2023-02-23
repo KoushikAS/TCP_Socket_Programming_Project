@@ -6,6 +6,8 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+
+#include "potato.hpp"
 /**
 citations:
     1) TCP example by Brian Rogers, updated by Rabih Younes. Duke University.
@@ -56,8 +58,8 @@ int setUpSocketToListen() {
     exit(EXIT_FAILURE);
   }
 
-  //int yes = 1;
-  //setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+  int yes = 1;
+  setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
 
   struct sockaddr_in my_addr;
   memset(&my_addr, 0, sizeof(my_addr));
@@ -89,6 +91,16 @@ void threadToListen(int main_socketFd) {
     exit(EXIT_FAILURE);
   }
   std::cout << "Someone contacted" << std::endl;
+  /**
+    potato * p;
+  recv(socketFd, p, 512, 0);
+  **/
+
+  char msg[512];
+  recv(socketFd, msg, 512, 0);
+  std::cout << msg << std::endl;
+  std::cout << "Finished" << std::endl;
+
   close(socketFd);
   return;
 }
@@ -133,8 +145,7 @@ int main(int argc, char * argv[]) {
 
   recv(ringmaster_socket, leftPlayer.hostName, 512, 0);
   recv(ringmaster_socket, leftPlayer.port, 512, 0);
-
-  leftPlayer.socketFd = setUpSocketToConnect(leftPlayer.hostName, leftPlayer.port);
+  //leftPlayer.socketFd = setUpSocketToConnect(leftPlayer.hostName, leftPlayer.port);
 
   //Receving Right Player
   playerClass rightPlayer;
@@ -154,6 +165,14 @@ int main(int argc, char * argv[]) {
   std::cout << "Connected as player " << playerName << " out of " << no_players
             << " total players" << std::endl;
 
+  const char * msg = "OK";
+  send(ringmaster_socket, msg, 512, 0);
+  /**
+  potato p;
+  p.hops_left = 10;
+
+  send(leftPlayer.socketFd, &p, 512, 0);
+  **/
   t1.join();
   close(ringmaster_socket);
   close(player_socket);

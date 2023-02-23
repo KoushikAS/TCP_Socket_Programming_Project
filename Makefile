@@ -4,8 +4,8 @@ all: $(TARGETS)
 clean:
 	rm -f $(TARGETS)
 
-ringmaster: ringmaster.cpp
+ringmaster: ringmaster.cpp potato.hpp
 	g++ -g -o $@ $<
 
-player: player.cpp
+player: player.cpp potato.hpp
 	g++ -g -o $@ $< -pthread
