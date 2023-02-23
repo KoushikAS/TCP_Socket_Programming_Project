@@ -85,20 +85,27 @@ int setUpSocketToListen() {
 void threadToListen(int main_socketFd) {
   std::cout << "Waiting " << std::endl;
 
-  int socketFd = accept(main_socketFd, NULL, NULL);
-  if (socketFd == -1) {
-    std::cerr << "Error cannot accept connection on socket" << std::endl;
-    exit(EXIT_FAILURE);
+  while (true) {
+    int socketFd = accept(main_socketFd, NULL, NULL);
+
+    if (socketFd == -1) {
+      std::cerr << "Error cannot accept connection on socket" << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    std::cout << "Someone contacted" << std::endl;
+
+    potato p[512];
+    recv(socketFd, p, 512, 0);
+
+    if (p->hops_left == -1) {
+      std::cout << "Finished" << std::endl;
+      break;
+    }
+
+    std::cout << p->hops_left << std::endl;
+    close(socketFd);
   }
-  std::cout << "Someone contacted" << std::endl;
 
-  potato p[512];
-  recv(socketFd, p, 512, 0);
-
-  std::cout << p->hops_left << std::endl;
-  std::cout << "Finished" << std::endl;
-
-  close(socketFd);
   return;
 }
 

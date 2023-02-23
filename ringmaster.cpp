@@ -161,14 +161,17 @@ int main(int argc, char * argv[]) {
 
     char msg[512];
     recv(players[i].socketFd, msg, 512, 0);
-    std::cout << msg << std::endl;
 
     close(players[i].socketFd);
   }
 
+  int random_player_no = rand() % no_players;
+
+  sendPotato(players[random_player_no].hostName, players[random_player_no].port, no_hops);
+
+  //Shut down to all players
   for (int i = 0; i < no_players; i++) {
-    sendPotato(players[i].hostName, players[i].port, 5);
-    std::cout << "Exit" << std::endl;
+    sendPotato(players[i].hostName, players[i].port, -1);
   }
 
   freeaddrinfo(hosts);
