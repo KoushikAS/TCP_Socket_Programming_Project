@@ -91,14 +91,11 @@ void threadToListen(int main_socketFd) {
     exit(EXIT_FAILURE);
   }
   std::cout << "Someone contacted" << std::endl;
-  /**
-    potato * p;
-  recv(socketFd, p, 512, 0);
-  **/
 
-  char msg[512];
-  recv(socketFd, msg, 512, 0);
-  std::cout << msg << std::endl;
+  potato p[512];
+  recv(socketFd, p, 512, 0);
+
+  std::cout << p->hops_left << std::endl;
   std::cout << "Finished" << std::endl;
 
   close(socketFd);
@@ -115,10 +112,8 @@ int main(int argc, char * argv[]) {
   char * hostname = argv[1];
   char * port = argv[2];
 
-  int ringmaster_socket = setUpSocketToConnect(hostname, port);
   int player_socket = setUpSocketToListen();
-
-  std::thread t1(threadToListen, player_socket);
+  int ringmaster_socket = setUpSocketToConnect(hostname, port);
 
   //Send player's hostname to ringmaster
   char player_hostname[512];
@@ -145,14 +140,12 @@ int main(int argc, char * argv[]) {
 
   recv(ringmaster_socket, leftPlayer.hostName, 512, 0);
   recv(ringmaster_socket, leftPlayer.port, 512, 0);
-  //leftPlayer.socketFd = setUpSocketToConnect(leftPlayer.hostName, leftPlayer.port);
 
   //Receving Right Player
   playerClass rightPlayer;
 
   recv(ringmaster_socket, rightPlayer.hostName, 512, 0);
   recv(ringmaster_socket, rightPlayer.port, 512, 0);
-  //rightPlayer.socketFd = setUpSocketToConnect(rightPlayer.hostName, rightPlayer.port);
 
   //Receving Player Name Info
   char playerName[512];
@@ -162,17 +155,22 @@ int main(int argc, char * argv[]) {
   char no_players[512];
   recv(ringmaster_socket, no_players, 512, 0);
 
+  // create a seperate thread to listen for potatoes
+  std::thread t1(threadToListen, player_socket);
+
   std::cout << "Connected as player " << playerName << " out of " << no_players
             << " total players" << std::endl;
 
   const char * msg = "OK";
   send(ringmaster_socket, msg, 512, 0);
+
   /**
   potato p;
   p.hops_left = 10;
 
   send(leftPlayer.socketFd, &p, 512, 0);
   **/
+
   t1.join();
   close(ringmaster_socket);
   close(player_socket);

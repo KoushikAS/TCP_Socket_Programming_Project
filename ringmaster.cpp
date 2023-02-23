@@ -87,13 +87,10 @@ void sendPotato(char * host_name, char * port, int no_hops) {
     exit(EXIT_FAILURE);
   }
 
-  const char * msg = "End";
-  send(socket_fd, msg, 512, 0);
-  /**
   potato p;
   p.hops_left = no_hops;
   send(socket_fd, &p, 512, 0);
-  **/
+
   freeaddrinfo(hosts);
   close(socket_fd);
 }
