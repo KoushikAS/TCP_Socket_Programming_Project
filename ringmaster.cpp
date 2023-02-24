@@ -89,6 +89,7 @@ void sendPotato(char * host_name, char * port, int no_hops) {
 
   potato p;
   p.hops_left = no_hops;
+  p.trace[0] = '\0';
   send(socket_fd, &p, 512, 0);
 
   freeaddrinfo(hosts);
@@ -181,6 +182,8 @@ int main(int argc, char * argv[]) {
 
   potato p[512];
   recv(potato_sock, p, 512, 0);
+  std::cout << "Trace of potato:" << std::endl;
+  std::cout << p->trace << std::endl;
 
   //Shut down to all players
   for (int i = 0; i < no_players; i++) {

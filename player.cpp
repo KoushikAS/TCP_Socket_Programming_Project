@@ -85,7 +85,8 @@ int setUpSocketToListen() {
 void threadToListen(int main_socketFd,
                     playerClass leftPlayer,
                     playerClass rightPlayer,
-                    playerClass ringMaster) {
+                    playerClass ringMaster,
+                    int currPlayerNo) {
   while (true) {
     int socketFd = accept(main_socketFd, NULL, NULL);
 
@@ -103,6 +104,15 @@ void threadToListen(int main_socketFd,
     }
 
     p->hops_left--;
+
+    std::string tmp;
+    if (p->hops_left != 0) {
+      tmp = std::to_string(currPlayerNo) + ",";
+    }
+    else {
+      tmp = std::to_string(currPlayerNo);
+    }
+    std::strcat(p->trace, tmp.c_str());
 
     int socketToSend;
 
@@ -195,7 +205,8 @@ int main(int argc, char * argv[]) {
   std::strcpy(ringmaster.port, port);
 
   // create a seperate thread to listen for potatoes
-  std::thread t1(threadToListen, player_socket, leftPlayer, rightPlayer, ringmaster);
+  std::thread t1(
+      threadToListen, player_socket, leftPlayer, rightPlayer, ringmaster, currPlayerNo);
 
   std::cout << "Connected as player " << playerNo << " out of " << no_players
             << " total players" << std::endl;
