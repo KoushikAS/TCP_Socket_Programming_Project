@@ -172,7 +172,6 @@ int main(int argc, char * argv[]) {
   sendPotato(players[random_player_no].hostName, players[random_player_no].port, no_hops);
 
   //Receving for final potato socket
-  std::cout << "waiting" << std::endl;
 
   int potato_sock = accept(socket_fd, NULL, NULL);
   if (potato_sock == -1) {
@@ -181,7 +180,6 @@ int main(int argc, char * argv[]) {
   }
 
   potato p[512];
-  std::cout << "Connected" << std::endl;
   recv(potato_sock, p, 512, 0);
 
   //Shut down to all players

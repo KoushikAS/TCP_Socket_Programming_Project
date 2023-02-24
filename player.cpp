@@ -15,9 +15,9 @@ citations:
 
 class playerClass {
  public:
-  int socketFd;
   char hostName[512];
   char port[512];
+  int playerNo;
 };
 
 int setUpSocketToConnect(char * host_name, char * port) {
@@ -93,33 +93,33 @@ void threadToListen(int main_socketFd,
       std::cerr << "Error cannot accept connection on socket" << std::endl;
       exit(EXIT_FAILURE);
     }
-    std::cout << "Someone contacted" << std::endl;
 
     potato p[512];
     recv(socketFd, p, 512, 0);
 
+    //ShutDown
     if (p->hops_left < 0) {
-      std::cout << "Finished" << std::endl;
       break;
     }
 
     p->hops_left--;
-    std::cout << p->hops_left << std::endl;
 
     int socketToSend;
 
     if (p->hops_left > 0) {
       if (rand() % 2 == 0) {
         //left
+        std::cout << "Sending potato to " << leftPlayer.playerNo << std::endl;
         socketToSend = setUpSocketToConnect(leftPlayer.hostName, leftPlayer.port);
       }
       else {
         //right
-        socketToSend = setUpSocketToConnect(leftPlayer.hostName, leftPlayer.port);
+        std::cout << "Sending potato to " << rightPlayer.playerNo << std::endl;
+        socketToSend = setUpSocketToConnect(rightPlayer.hostName, rightPlayer.port);
       }
     }
     else {
-      std::cout << "Ring master socket" << std::endl;
+      std::cout << "I’m it" << std::endl;
       socketToSend = setUpSocketToConnect(ringMaster.hostName, ringMaster.port);
     }
 
@@ -178,12 +178,17 @@ int main(int argc, char * argv[]) {
   recv(ringmaster_socket, rightPlayer.port, 512, 0);
 
   //Receving Player Name Info
-  char playerName[512];
-  recv(ringmaster_socket, playerName, 512, 0);
+  char playerNo[512];
+  recv(ringmaster_socket, playerNo, 512, 0);
 
   //Receving Total No of Players Info
   char no_players[512];
   recv(ringmaster_socket, no_players, 512, 0);
+
+  int currPlayerNo = atoi(playerNo);
+  int totalplayers = atoi(no_players);
+  leftPlayer.playerNo = (totalplayers + (currPlayerNo - 1) % totalplayers) % totalplayers;
+  rightPlayer.playerNo = (currPlayerNo + 1) % totalplayers;
 
   playerClass ringmaster;
   std::strcpy(ringmaster.hostName, hostname);
@@ -192,7 +197,7 @@ int main(int argc, char * argv[]) {
   // create a seperate thread to listen for potatoes
   std::thread t1(threadToListen, player_socket, leftPlayer, rightPlayer, ringmaster);
 
-  std::cout << "Connected as player " << playerName << " out of " << no_players
+  std::cout << "Connected as player " << playerNo << " out of " << no_players
             << " total players" << std::endl;
 
   const char * msg = "OK";
