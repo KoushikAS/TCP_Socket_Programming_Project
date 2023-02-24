@@ -204,6 +204,7 @@ int main(int argc, char * argv[]) {
   std::strcpy(ringmaster.hostName, hostname);
   std::strcpy(ringmaster.port, port);
 
+  srand((unsigned int)time(NULL) + currPlayerNo);
   // create a seperate thread to listen for potatoes
   std::thread t1(
       threadToListen, player_socket, leftPlayer, rightPlayer, ringmaster, currPlayerNo);

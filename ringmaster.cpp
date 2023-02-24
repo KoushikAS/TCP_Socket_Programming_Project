@@ -167,6 +167,7 @@ int main(int argc, char * argv[]) {
   }
 
   //Sending potato to random player
+  srand((unsigned int)time(NULL));
   int random_player_no = rand() % no_players;
   std::cout << "Ready to start the game, sending potato to player " << random_player_no
             << std::endl;
