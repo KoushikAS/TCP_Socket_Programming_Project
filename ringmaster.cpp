@@ -108,9 +108,20 @@ int main(int argc, char * argv[]) {
   int no_hops = atoi(argv[3]);
   struct addrinfo * hosts;
 
+  if (no_players < 2) {
+    std::cerr << "Error required no of players is incorrect" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+
+  if (no_hops < 0) {
+    std::cerr << "Error required no of hops is incorrect" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+
   std::cout << "Potato Ringmaster" << std::endl;
   std::cout << "Players = " << no_players << std::endl;
   std::cout << "Hops = " << no_hops << std::endl;
+
   std::vector<playerClass> players;
 
   int socket_fd = setUpSocketToListen(&hosts, port);
@@ -166,25 +177,29 @@ int main(int argc, char * argv[]) {
     close(players[i].socketFd);
   }
 
-  //Sending potato to random player
-  srand((unsigned int)time(NULL));
-  int random_player_no = rand() % no_players;
-  std::cout << "Ready to start the game, sending potato to player " << random_player_no
-            << std::endl;
-  sendPotato(players[random_player_no].hostName, players[random_player_no].port, no_hops);
+  //To only sent if the no of hops is greater than 0
+  if (no_hops != 0) {
+    //Sending potato to random player
+    srand((unsigned int)time(NULL));
+    int random_player_no = rand() % no_players;
+    std::cout << "Ready to start the game, sending potato to player " << random_player_no
+              << std::endl;
+    sendPotato(
+        players[random_player_no].hostName, players[random_player_no].port, no_hops);
 
-  //Receving for final potato socket
+    //Receving for final potato socket
 
-  int potato_sock = accept(socket_fd, NULL, NULL);
-  if (potato_sock == -1) {
-    std::cerr << "Error cannot accept connection on socket" << std::endl;
-    exit(EXIT_FAILURE);
+    int potato_sock = accept(socket_fd, NULL, NULL);
+    if (potato_sock == -1) {
+      std::cerr << "Error cannot accept connection on socket" << std::endl;
+      exit(EXIT_FAILURE);
+    }
+
+    potato p[512];
+    recv(potato_sock, p, 512, 0);
+    std::cout << "Trace of potato:" << std::endl;
+    std::cout << p->trace << std::endl;
   }
-
-  potato p[512];
-  recv(potato_sock, p, 512, 0);
-  std::cout << "Trace of potato:" << std::endl;
-  std::cout << p->trace << std::endl;
 
   //Shut down to all players
   for (int i = 0; i < no_players; i++) {

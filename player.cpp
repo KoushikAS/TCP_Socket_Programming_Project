@@ -129,7 +129,7 @@ void threadToListen(int main_socketFd,
       }
     }
     else {
-      std::cout << "I’m it" << std::endl;
+      std::cout << "I'm it" << std::endl;
       socketToSend = setUpSocketToConnect(ringMaster.hostName, ringMaster.port);
     }
 
