@@ -12,11 +12,12 @@
 citations:
     1) TCP example by Brian Rogers, updated by Rabih Younes. Duke University.
 */
+const int MESSAGE_BUFFER_SIZE = 2048;
 
 class playerClass {
  public:
-  char hostName[512];
-  char port[512];
+  char hostName[MESSAGE_BUFFER_SIZE];
+  char port[MESSAGE_BUFFER_SIZE];
   int playerNo;
 };
 
@@ -95,8 +96,8 @@ void threadToListen(int main_socketFd,
       exit(EXIT_FAILURE);
     }
 
-    potato p[512];
-    recv(socketFd, p, 512, 0);
+    potato p[MESSAGE_BUFFER_SIZE];
+    recv(socketFd, p, MESSAGE_BUFFER_SIZE, 0);
 
     //ShutDown
     if (p->hops_left < 0) {
@@ -133,7 +134,7 @@ void threadToListen(int main_socketFd,
       socketToSend = setUpSocketToConnect(ringMaster.hostName, ringMaster.port);
     }
 
-    send(socketToSend, p, 512, 0);
+    send(socketToSend, p, MESSAGE_BUFFER_SIZE, 0);
 
     close(socketToSend);
     close(socketFd);
@@ -156,12 +157,12 @@ int main(int argc, char * argv[]) {
   int ringmaster_socket = setUpSocketToConnect(hostname, port);
 
   //Send player's hostname to ringmaster
-  char player_hostname[512];
-  if (gethostname(player_hostname, 512) != 0) {
+  char player_hostname[MESSAGE_BUFFER_SIZE];
+  if (gethostname(player_hostname, MESSAGE_BUFFER_SIZE) != 0) {
     std::cerr << "Error could not get hostname" << std::endl;
     exit(EXIT_FAILURE);
   }
-  send(ringmaster_socket, player_hostname, 512, 0);
+  send(ringmaster_socket, player_hostname, MESSAGE_BUFFER_SIZE, 0);
 
   // Send player's portto the the ring master.
   struct sockaddr_in playeraddr;
@@ -173,27 +174,27 @@ int main(int argc, char * argv[]) {
   }
   const char * player_port = std::to_string(ntohs(playeraddr.sin_port)).c_str();
 
-  send(ringmaster_socket, player_port, 512, 0);
+  send(ringmaster_socket, player_port, MESSAGE_BUFFER_SIZE, 0);
 
   //Receving Left Player
   playerClass leftPlayer;
 
-  recv(ringmaster_socket, leftPlayer.hostName, 512, 0);
-  recv(ringmaster_socket, leftPlayer.port, 512, 0);
+  recv(ringmaster_socket, leftPlayer.hostName, MESSAGE_BUFFER_SIZE, 0);
+  recv(ringmaster_socket, leftPlayer.port, MESSAGE_BUFFER_SIZE, 0);
 
   //Receving Right Player
   playerClass rightPlayer;
 
-  recv(ringmaster_socket, rightPlayer.hostName, 512, 0);
-  recv(ringmaster_socket, rightPlayer.port, 512, 0);
+  recv(ringmaster_socket, rightPlayer.hostName, MESSAGE_BUFFER_SIZE, 0);
+  recv(ringmaster_socket, rightPlayer.port, MESSAGE_BUFFER_SIZE, 0);
 
   //Receving Player Name Info
-  char playerNo[512];
-  recv(ringmaster_socket, playerNo, 512, 0);
+  char playerNo[MESSAGE_BUFFER_SIZE];
+  recv(ringmaster_socket, playerNo, MESSAGE_BUFFER_SIZE, 0);
 
   //Receving Total No of Players Info
-  char no_players[512];
-  recv(ringmaster_socket, no_players, 512, 0);
+  char no_players[MESSAGE_BUFFER_SIZE];
+  recv(ringmaster_socket, no_players, MESSAGE_BUFFER_SIZE, 0);
 
   int currPlayerNo = atoi(playerNo);
   int totalplayers = atoi(no_players);
@@ -213,7 +214,7 @@ int main(int argc, char * argv[]) {
             << " total players" << std::endl;
 
   const char * msg = "OK";
-  send(ringmaster_socket, msg, 512, 0);
+  send(ringmaster_socket, msg, MESSAGE_BUFFER_SIZE, 0);
 
   t1.join();
   close(ringmaster_socket);

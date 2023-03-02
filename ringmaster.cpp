@@ -11,13 +11,14 @@
 citations:
     1) TCP example by Brian Rogers, updated by Rabih Younes. Duke University.
 */
+const int MESSAGE_BUFFER_SIZE = 2048;
 
 class playerClass {
  public:
   int playerNo;
   int socketFd;
-  char hostName[512];
-  char port[512];
+  char hostName[MESSAGE_BUFFER_SIZE];
+  char port[MESSAGE_BUFFER_SIZE];
 };
 
 /**
@@ -90,7 +91,7 @@ void sendPotato(char * host_name, char * port, int no_hops) {
   potato p;
   p.hops_left = no_hops;
   p.trace[0] = '\0';
-  send(socket_fd, &p, 512, 0);
+  send(socket_fd, &p, MESSAGE_BUFFER_SIZE, 0);
 
   freeaddrinfo(hosts);
   close(socket_fd);
@@ -139,10 +140,10 @@ int main(int argc, char * argv[]) {
     }
 
     //Receving hostname
-    recv(player.socketFd, player.hostName, 512, 0);
+    recv(player.socketFd, player.hostName, MESSAGE_BUFFER_SIZE, 0);
 
     //Receving portname
-    recv(player.socketFd, player.port, 512, 0);
+    recv(player.socketFd, player.port, MESSAGE_BUFFER_SIZE, 0);
 
     players.push_back(player);
 
@@ -154,25 +155,25 @@ int main(int argc, char * argv[]) {
     //Send Left player info
     int left = (no_players + (i - 1) % no_players) % no_players;
 
-    send(players[i].socketFd, players[left].hostName, 512, 0);
-    send(players[i].socketFd, players[left].port, 512, 0);
+    send(players[i].socketFd, players[left].hostName, MESSAGE_BUFFER_SIZE, 0);
+    send(players[i].socketFd, players[left].port, MESSAGE_BUFFER_SIZE, 0);
 
     //Send Right player info
     int right = (i + 1) % no_players;
 
-    send(players[i].socketFd, players[right].hostName, 512, 0);
-    send(players[i].socketFd, players[right].port, 512, 0);
+    send(players[i].socketFd, players[right].hostName, MESSAGE_BUFFER_SIZE, 0);
+    send(players[i].socketFd, players[right].port, MESSAGE_BUFFER_SIZE, 0);
 
     //Send Current Player Info
     const char * curr_player_info = std::to_string(players[i].playerNo).c_str();
-    send(players[i].socketFd, curr_player_info, 512, 0);
+    send(players[i].socketFd, curr_player_info, MESSAGE_BUFFER_SIZE, 0);
 
     //Send total Player
     const char * total_player_info = std::to_string(no_players).c_str();
-    send(players[i].socketFd, total_player_info, 512, 0);
+    send(players[i].socketFd, total_player_info, MESSAGE_BUFFER_SIZE, 0);
 
-    char msg[512];
-    recv(players[i].socketFd, msg, 512, 0);
+    char msg[MESSAGE_BUFFER_SIZE];
+    recv(players[i].socketFd, msg, MESSAGE_BUFFER_SIZE, 0);
 
     close(players[i].socketFd);
   }
@@ -195,8 +196,8 @@ int main(int argc, char * argv[]) {
       exit(EXIT_FAILURE);
     }
 
-    potato p[512];
-    recv(potato_sock, p, 512, 0);
+    potato p[MESSAGE_BUFFER_SIZE];
+    recv(potato_sock, p, MESSAGE_BUFFER_SIZE, 0);
     std::cout << "Trace of potato:" << std::endl;
     std::cout << p->trace << std::endl;
   }
